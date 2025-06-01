@@ -130,6 +130,20 @@ uvicorn src.main:app --reload
 - `SERPER_API_KEY` - Serper search API key
 - `GCS_BUCKET_NAME` - Google Cloud Storage bucket
 
+### MCP (Model Context Protocol) Setup
+For Cursor IDE integration with Taskmaster AI:
+
+1. Copy the MCP configuration template:
+   ```bash
+   cp .cursor/mcp.json.example .cursor/mcp.json
+   ```
+
+2. Edit `.cursor/mcp.json` and replace `your-openai-api-key-here` with your actual OpenAI API key
+
+3. Restart Cursor IDE to load the MCP server
+
+**Note**: The actual `.cursor/mcp.json` file is gitignored for security reasons.
+
 ### API Documentation
 Once the server is running, visit:
 - **Interactive API Docs**: http://localhost:8000/docs
