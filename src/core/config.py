@@ -24,18 +24,18 @@ class Settings(BaseSettings):
     anthropic_api_key: Optional[str] = None
     
     # === Supabase Configuration ===
-    supabase_url: str = "https://pjzzwlethszhjyzxgjmd.supabase.co"
-    supabase_anon_key: str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqenp3bGV0aHN6aGp5enhnam1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg4MTIyNzUsImV4cCI6MjA2NDM4ODI3NX0.T_QGYzcYDcKiDYcluWbl160VPtU_1BaOXZWckgIYyqo"
-    supabase_service_role_key: str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqenp3bGV0aHN6aGp5enhnam1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg4MTIyNzUsImV4cCI6MjA2NDM4ODI3NX0.T_QGYzcYDcKiDYcluWbl160VPtU_1BaOXZWckgIYyqo"
-    supabase_project_ref: str = "pjzzwlethszhjyzxgjmd"
-    supabase_jwt_secret: str = "vObpEZUcRPCtUCRxtSVmxbshFd5ueor3vAKXMNE/4Qs0TgRjWkUfXFrv6nBK0Ajdo9TwOqN5nWIp656jKiY9fw=="
+    supabase_url: Optional[str] = None
+    supabase_anon_key: Optional[str] = None
+    supabase_service_role_key: Optional[str] = None
+    supabase_project_ref: Optional[str] = None
+    supabase_jwt_secret: Optional[str] = None
     
     # === Database Configuration ===
-    database_url: str = "postgresql://postgres:M4k4l4h2025@db.pjzzwlethszhjyzxgjmd.supabase.co:5432/postgres"
+    database_url: Optional[str] = None
     postgres_db: str = "postgres"
     postgres_user: str = "postgres"
-    postgres_password: str = "M4k4l4h2025"
-    postgres_host: str = "db.pjzzwlethszhjyzxgjmd.supabase.co"
+    postgres_password: Optional[str] = None
+    postgres_host: str = "localhost"
     postgres_port: int = 5432
     
     # === Redis Configuration ===
