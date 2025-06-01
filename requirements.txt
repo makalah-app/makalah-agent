@@ -1,0 +1,90 @@
+# Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Database
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+alembic==1.13.1
+asyncpg==0.29.0
+
+# Google Cloud & ADK
+google-cloud-storage==2.10.0
+google-cloud-run==0.10.1
+google-cloud-logging==3.8.0
+google-cloud-monitoring==2.16.0
+google-generativeai==0.3.2
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+python-multipart==0.0.6
+passlib[bcrypt]==1.7.4
+cryptography==41.0.8
+
+# HTTP Client
+httpx==0.25.2
+aiohttp==3.9.1
+requests==2.31.0
+
+# AI/LLM Integration
+openai==1.6.1
+anthropic==0.8.1
+
+# File Processing
+PyPDF2==3.0.1
+python-docx==1.1.0
+python-magic==0.4.27
+
+# Data Processing
+pandas==2.1.4
+numpy==1.25.2
+
+# Background Tasks & Caching
+celery==5.3.4
+redis==5.0.1
+python-redis==4.6.0
+
+# Monitoring & Logging
+structlog==23.2.0
+sentry-sdk[fastapi]==1.39.2
+
+# Development & Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+black==23.11.0
+isort==5.12.0
+flake8==6.1.0
+mypy==1.7.1
+
+# Environment
+python-dotenv==1.0.0
+
+# Search Integration
+serper==0.1.4
+
+# Session Management
+itsdangerous==2.1.2
+
+# Date/Time
+python-dateutil==2.8.2
+
+# Validation
+email-validator==2.1.0
+
+# Serialization
+orjson==3.9.10
+
+# CORS
+python-cors==1.7.0
+
+# Rate Limiting
+slowapi==0.1.9
+
+# Health Checks
+healthcheck==1.3.3
+
+# Google ADK (when available)
+# google-adk-python>=1.0.0  # Placeholder - will be updated when available 

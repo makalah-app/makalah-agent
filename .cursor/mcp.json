@@ -1,0 +1,12 @@
+{
+    "mcpServers": {
+      "taskmaster-ai": {
+        "command": "npx",
+        "args": ["-y", "--package", "task-master-ai", "task-master-mcp"],
+        "env": {
+          "OPENAI_API_KEY": "your-openai-api-key-here"
+        }
+      }
+    }
+  }
+  
