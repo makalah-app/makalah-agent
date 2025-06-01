@@ -1,11 +1,12 @@
 """
 Agent-Makalah Backend API Routes
-Main API router configuration for all endpoints
+Main API router configuration for all endpoints with Supabase integration
 """
 
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Dict, Any, List
 from pydantic import BaseModel
+from database.supabase_client import supabase_client
 
 # Create main API router
 api_router = APIRouter(prefix="/api/v1")
@@ -42,14 +43,25 @@ async def get_agents_status():
 @api_router.get("/system", response_model=SystemInfo)
 async def get_system_info():
     """
-    Get detailed system information for Agent-Makalah backend
+    Get detailed system information for Agent-Makalah backend with Supabase health
     """
-    return SystemInfo(
-        total_agents=6,
-        active_sessions=0,
-        system_load="low",
-        uptime="operational"
-    )
+    try:
+        # Check Supabase health
+        supabase_health = await supabase_client.health_check()
+        
+        return SystemInfo(
+            total_agents=6,
+            active_sessions=0,
+            system_load="low" if supabase_health["status"] == "healthy" else "high",
+            uptime="operational" if supabase_health["status"] == "healthy" else "degraded"
+        )
+    except Exception as e:
+        return SystemInfo(
+            total_agents=6,
+            active_sessions=0,
+            system_load="high",
+            uptime="degraded"
+        )
 
 @api_router.post("/papers/new")
 async def create_new_paper():
@@ -73,4 +85,34 @@ async def analyze_existing_paper():
         "message": "Paper analysis endpoint ready", 
         "status": "not_implemented",
         "workflow": "document_analysis_feedback"
-    } 
+    }
+
+@api_router.get("/database/health")
+async def get_database_health():
+    """
+    Get Supabase database health status
+    """
+    try:
+        health_status = await supabase_client.health_check()
+        return {
+            "database": "supabase",
+            "health": health_status,
+            "timestamp": "2025-01-31T00:00:00Z"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database health check failed: {str(e)}")
+
+@api_router.get("/database/agents")
+async def get_database_agents():
+    """
+    Get agents from Supabase database
+    """
+    try:
+        agents = await supabase_client.get_agents()
+        return {
+            "agents": agents,
+            "count": len(agents),
+            "source": "supabase_database"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch agents from database: {str(e)}") 
