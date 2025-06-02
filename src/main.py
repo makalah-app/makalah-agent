@@ -18,6 +18,16 @@ from datetime import datetime
 
 # Import API routes
 from api.routes import api_router
+from api.auth_routes import auth_router
+
+# Import security middleware
+from src.middleware.security_headers import SecurityHeadersMiddleware
+from src.middleware.rate_limiting import RateLimitingMiddleware
+from src.middleware.auth_middleware import AuthenticationMiddleware
+from src.middleware.request_logging import RequestLoggingMiddleware
+
+# Import configuration
+from src.core.config import settings
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -28,17 +38,41 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# CORS middleware configuration
+# === MIDDLEWARE CONFIGURATION (Order matters!) ===
+
+# 1. Request Logging Middleware (first to capture all requests)
+app.add_middleware(
+    RequestLoggingMiddleware,
+    log_body=False  # Set to True in development if needed, False in production for security
+)
+
+# 2. Security Headers Middleware (early for all responses)
+app.add_middleware(
+    SecurityHeadersMiddleware,
+    environment=settings.environment
+)
+
+# 3. Rate Limiting Middleware (before authentication to prevent abuse)
+app.add_middleware(RateLimitingMiddleware)
+
+# 4. Authentication Middleware (after rate limiting, before routes)
+app.add_middleware(AuthenticationMiddleware)
+
+# 5. CORS Middleware (after auth, allows cross-origin for authenticated requests)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify actual domains
+    allow_origins=settings.cors_origins if settings.environment == "production" else ["*"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["X-Request-ID", "X-Process-Time", "X-RateLimit-Remaining"]
 )
+
+# === ROUTE CONFIGURATION ===
 
 # Include API routes
 app.include_router(api_router)
+app.include_router(auth_router, prefix="/api/v1")
 
 # Health check response model
 class HealthResponse(BaseModel):
@@ -47,93 +81,168 @@ class HealthResponse(BaseModel):
     timestamp: str
     version: str
     system: str
+    environment: str
+    security_features: Dict[str, bool]
 
-# Welcome response model
-class WelcomeResponse(BaseModel):
-    message: str
-    description: str
-    version: str
-    endpoints: Dict[str, str]
 
-@app.get("/", response_model=WelcomeResponse)
+# === CORE ENDPOINTS ===
+
+@app.get("/", response_model=Dict[str, Any])
 async def root():
     """
-    Welcome endpoint for Agent-Makalah Backend API
-    
-    Returns basic information about the API and available endpoints.
+    Root endpoint - basic API information
     """
-    return WelcomeResponse(
-        message="Welcome to Agent-Makalah Backend API",
-        description="AI-powered academic writing assistant designed for Bahasa Indonesia academic writing",
-        version="1.0.0",
-        endpoints={
-            "health": "/health",
-            "docs": "/docs",
-            "redoc": "/redoc"
-        }
-    )
+    return {
+        "message": "Agent-Makalah Backend API",
+        "version": "1.0.0",
+        "status": "active",
+        "docs": "/docs",
+        "health": "/health"
+    }
+
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """
-    Health check endpoint for monitoring and deployment
-    
-    Returns the current status of the application and system information.
+    Comprehensive health check endpoint
     """
     return HealthResponse(
         status="healthy",
-        message="Agent-Makalah Backend is running successfully",
-        timestamp=datetime.now().isoformat(),
+        message="Agent-Makalah Backend is running",
+        timestamp=datetime.utcnow().isoformat(),
         version="1.0.0",
-        system="Agent-Makalah Multi-Agent Academic Writing Assistant"
+        system="Agent-Makalah Backend",
+        environment=settings.environment,
+        security_features={
+            "authentication": True,
+            "rate_limiting": True,
+            "security_headers": True,
+            "request_logging": True,
+            "cors_configured": True,
+            "jwt_tokens": True,
+            "role_based_access": True
+        }
     )
 
-@app.get("/api/v1/status")
-async def api_status():
+
+@app.get("/security-status")
+async def security_status():
     """
-    API status endpoint providing detailed system information
+    Security status endpoint (requires authentication)
     """
     return {
-        "api_version": "v1",
-        "service": "agent-makalah-backend",
-        "status": "operational",
+        "security_status": "active",
         "features": {
-            "new_paper_creation": "available",
-            "document_analysis": "available", 
-            "multi_agent_system": "available",
-            "bahasa_indonesia_support": "available"
+            "middleware": {
+                "security_headers": "enabled",
+                "rate_limiting": "enabled", 
+                "authentication": "enabled",
+                "request_logging": "enabled"
+            },
+            "authentication": {
+                "jwt_tokens": "enabled",
+                "token_blacklisting": "enabled",
+                "session_management": "enabled",
+                "role_based_access": "enabled"
+            },
+            "security_headers": {
+                "csp": "enabled",
+                "xss_protection": "enabled",
+                "frame_options": "enabled",
+                "content_type_options": "enabled",
+                "hsts": "production_only"
+            },
+            "rate_limiting": {
+                "auth_endpoints": "strict",
+                "api_endpoints": "moderate",
+                "docs_endpoints": "generous"
+            }
         },
-        "agents": {
-            "orchestrator": "ready",
-            "brainstorming": "ready",
-            "literature_search": "ready", 
-            "outline_draft": "ready",
-            "writer": "ready",
-            "analysis_editor": "ready"
-        }
+        "environment": settings.environment,
+        "timestamp": datetime.utcnow().isoformat()
     }
 
-# Error handlers
-@app.exception_handler(404)
-async def not_found_handler(request, exc):
+
+# === ERROR HANDLERS ===
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request, exc):
+    """
+    Custom HTTP exception handler with security headers
+    """
     return JSONResponse(
-        status_code=404,
-        content={"message": "Endpoint not found", "error": "Not Found"}
+        status_code=exc.status_code,
+        content={
+            "error": exc.detail,
+            "status_code": exc.status_code,
+            "timestamp": datetime.utcnow().isoformat()
+        },
+        headers={
+            "X-Error-Type": "HTTPException",
+            "X-Agent-Makalah-Error": "true"
+        }
     )
+
 
 @app.exception_handler(500)
-async def internal_error_handler(request, exc):
+async def internal_server_error_handler(request, exc):
+    """
+    Internal server error handler
+    """
     return JSONResponse(
         status_code=500,
-        content={"message": "Internal server error", "error": "Server Error"}
+        content={
+            "error": "Internal server error",
+            "message": "An unexpected error occurred",
+            "status_code": 500,
+            "timestamp": datetime.utcnow().isoformat()
+        },
+        headers={
+            "X-Error-Type": "InternalServerError", 
+            "X-Agent-Makalah-Error": "true"
+        }
     )
 
+
+# === APPLICATION STARTUP/SHUTDOWN ===
+
+@app.on_event("startup")
+async def startup_event():
+    """
+    Application startup event
+    """
+    print("🚀 Agent-Makalah Backend starting up...")
+    print(f"📊 Environment: {settings.environment}")
+    print("🛡️ Security middleware enabled:")
+    print("   - Security Headers ✅")
+    print("   - Rate Limiting ✅") 
+    print("   - Authentication ✅")
+    print("   - Request Logging ✅")
+    print("   - CORS Protection ✅")
+    print("🔐 Authentication features:")
+    print("   - JWT Tokens ✅")
+    print("   - Token Blacklisting ✅")
+    print("   - Session Management ✅")
+    print("   - Role-based Access ✅")
+    print("✅ Agent-Makalah Backend ready!")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """
+    Application shutdown event
+    """
+    print("🛑 Agent-Makalah Backend shutting down...")
+    print("✅ Cleanup completed")
+
+
+# === DEVELOPMENT SERVER ===
+
 if __name__ == "__main__":
-    # Run the application
     uvicorn.run(
         "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
+        host=settings.api_host,
+        port=settings.api_port,
+        reload=settings.api_reload,
+        log_level=settings.log_level
     ) 

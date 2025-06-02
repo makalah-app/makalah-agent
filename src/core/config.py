@@ -28,7 +28,10 @@ class Settings(BaseSettings):
     supabase_anon_key: Optional[str] = None
     supabase_service_role_key: Optional[str] = None
     supabase_project_ref: Optional[str] = None
+    supabase_project_id: Optional[str] = None
     supabase_jwt_secret: Optional[str] = None
+    supabase_storage_url: Optional[str] = None
+    s3_endpoint: Optional[str] = None
     
     # === Database Configuration ===
     database_url: Optional[str] = None
@@ -43,6 +46,32 @@ class Settings(BaseSettings):
     redis_host: str = "localhost"
     redis_port: int = 6379
     redis_db: int = 0
+    
+    # === Upstash Redis Configuration ===
+    upstash_redis_url: Optional[str] = None
+    upstash_redis_token: Optional[str] = None
+    upstash_redis_password: Optional[str] = None
+    upstash_redis_endpoint: Optional[str] = None
+    upstash_redis_port: Optional[int] = None
+    
+    # === JWT Authentication Configuration ===
+    jwt_secret_key: str = "default-jwt-secret-key-change-in-production"
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_expire_minutes: int = 30
+    jwt_refresh_token_expire_days: int = 7
+    
+    # === Password Hashing Configuration ===
+    password_hash_algorithm: str = "bcrypt"
+    password_hash_rounds: int = 12
+    password_salt: str = "default-salt-change-in-production"
+    
+    # === Session Configuration ===
+    session_secret_key: str = "default-session-secret-change-in-production"
+    session_max_age: int = 3600  # 1 hour
+    session_cookie_name: str = "agent_makalah_session"
+    session_cookie_secure: bool = False  # Set to True in production with HTTPS
+    session_cookie_httponly: bool = True
+    session_cookie_samesite: str = "lax"
     
     # === Google Cloud Configuration ===
     gcs_bucket_name: Optional[str] = None
@@ -81,7 +110,11 @@ class Settings(BaseSettings):
     max_revision_cycles: int = 3
     
     class Config:
-        env_file = ".env"
+        # Construct the path to the .env file relative to this config.py file
+        # Assuming config.py is in src/core/ and .env is in the project root (two levels up)
+        # BASE_DIR should point to the project root
+        BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        env_file = os.path.join(BASE_DIR, ".env")
         env_file_encoding = "utf-8"
         case_sensitive = False
 
@@ -105,6 +138,14 @@ def get_redis_url() -> str:
     Get Redis connection URL
     """
     return settings.redis_url
+
+def get_upstash_redis_url() -> str:
+    """
+    Get Upstash Redis connection URL
+    """
+    if settings.upstash_redis_url:
+        return settings.upstash_redis_url
+    return None
 
 def is_development() -> bool:
     """

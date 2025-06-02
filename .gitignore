@@ -26,10 +26,16 @@ node_modules/
 
 # OS specific
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
 # Task files
 tasks.json
-tasks/
+tasks/ 
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -195,7 +201,6 @@ cython_debug/
 .vscode/
 
 # macOS
-.DS_Store
 .AppleDouble
 .LSOverride
 
@@ -208,10 +213,6 @@ Icon
 # Files that might appear in the root of a volume
 .DocumentRevisions-V100
 .fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
 .com.apple.timemachine.donotpresent
 
 # Directories potentially created on remote AFP share
@@ -343,4 +344,55 @@ deployment_configs/
 
 # AI model cache
 .model_cache/
-model_downloads/ 
+model_downloads/
+
+# Test artifacts and temporary files
+test_*.log
+debug_*.log
+temp_*.py
+*.temp
+
+# Development artifacts
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Runtime and cache files
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local 

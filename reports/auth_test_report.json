@@ -1,0 +1,125 @@
+{
+  "test_suite": "Agent-Makalah Authentication",
+  "timestamp": "2025-06-02T21:10:17.149425",
+  "summary": {
+    "total_tests": 17,
+    "passed_tests": 12,
+    "failed_tests": 5,
+    "success_rate": 70.58823529411765,
+    "total_duration": 30.664247035980225
+  },
+  "results": {
+    "simple_auth_flow": {
+      "status": "PASSED",
+      "duration": 5.691887855529785,
+      "description": "Complete Authentication Flow (Simple)",
+      "error": null
+    },
+    "endpoint_test_01_user_registration": {
+      "status": "FAILED",
+      "duration": 0.17751383781433105,
+      "description": "User Registration",
+      "error": ""
+    },
+    "endpoint_test_02_duplicate_user_registration": {
+      "status": "PASSED",
+      "duration": 0.18608593940734863,
+      "description": "Duplicate Registration Handling",
+      "error": null
+    },
+    "endpoint_test_03_user_login": {
+      "status": "PASSED",
+      "duration": 0.9500129222869873,
+      "description": "User Login",
+      "error": null
+    },
+    "endpoint_test_04_invalid_login": {
+      "status": "PASSED",
+      "duration": 0.3967728614807129,
+      "description": "Invalid Login Handling",
+      "error": null
+    },
+    "endpoint_test_05_token_verification": {
+      "status": "PASSED",
+      "duration": 0.30757617950439453,
+      "description": "Token Verification",
+      "error": null
+    },
+    "endpoint_test_06_get_user_profile": {
+      "status": "PASSED",
+      "duration": 0.361767053604126,
+      "description": "Get User Profile",
+      "error": null
+    },
+    "endpoint_test_07_update_user_profile": {
+      "status": "FAILED",
+      "duration": 0.2212080955505371,
+      "description": "Update User Profile",
+      "error": ""
+    },
+    "endpoint_test_08_token_refresh": {
+      "status": "PASSED",
+      "duration": 1.5566649436950684,
+      "description": "Token Refresh",
+      "error": null
+    },
+    "endpoint_test_09_access_protected_endpoint": {
+      "status": "FAILED",
+      "duration": 0.2938399314880371,
+      "description": "Protected Endpoint Access",
+      "error": ""
+    },
+    "endpoint_test_10_logout_user": {
+      "status": "PASSED",
+      "duration": 0.9110472202301025,
+      "description": "User Logout",
+      "error": null
+    },
+    "endpoint_test_11_access_after_logout": {
+      "status": "PASSED",
+      "duration": 0.09160804748535156,
+      "description": "Access After Logout",
+      "error": null
+    },
+    "endpoint_test_12_login_after_logout": {
+      "status": "FAILED",
+      "duration": 0.0962831974029541,
+      "description": "Login After Logout",
+      "error": ""
+    },
+    "endpoint_test_13_logout_all_sessions": {
+      "status": "FAILED",
+      "duration": 0.09009599685668945,
+      "description": "Logout All Sessions",
+      "error": ""
+    },
+    "endpoint_test_14_unauthorized_access": {
+      "status": "PASSED",
+      "duration": 0.005566835403442383,
+      "description": "Unauthorized Access Handling",
+      "error": null
+    },
+    "security_middleware": {
+      "status": "PASSED",
+      "duration": 0.3248429298400879,
+      "description": "Security Middleware Integration",
+      "error": null
+    },
+    "performance": {
+      "status": "PASSED",
+      "duration": 18.99328899383545,
+      "description": "Authentication Performance Benchmark",
+      "metrics": {
+        "average_login_time": 1.093845796585083,
+        "operations_tested": 10
+      }
+    }
+  },
+  "errors": [
+    "endpoint_test_01_user_registration: ",
+    "endpoint_test_07_update_user_profile: ",
+    "endpoint_test_09_access_protected_endpoint: ",
+    "endpoint_test_12_login_after_logout: ",
+    "endpoint_test_13_logout_all_sessions: "
+  ]
+}

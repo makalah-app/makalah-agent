@@ -101,7 +101,7 @@ This document outlines the core technologies and services that will be utilized 
     *   **Purpose:** For persistent storage of structured data including full conversation history, detailed agent states across sessions, metadata for intermediate artifacts (topics, references, outlines), and uploaded file metadata. PostgreSQL is robust and widely supported. Supabase offers a managed solution that simplifies database operations and provides a familiar environment.
 *   **4.2. Vector Database (for Semantic Search/KB Retrieval - Future):** (Post-MVP Consideration) {#tsam-vector-db}
     *   **Purpose:** To support advanced semantic search, contextual retrieval, and Knowledge Graph features (as outlined in `prd-agent-makalah#prd-future-considerations`) in future iterations by storing vector embeddings of knowledge bases or content.
-*   **4.3. Object Storage (for User-Uploaded Files):** Google Cloud Storage (GCS) {#tsam-object-storage}
+*   **4.3. Object Storage (for User-Uploaded Files):** Cloudinary, AWS S3, or similar object storage service {#tsam-object-storage}
     *   **Purpose:** For secure and scalable temporary storage of user-uploaded academic paper files (PDF, DOCX, TXT) before and during processing by `Analysis_Editor_Agent`.
 
 ---
@@ -141,16 +141,16 @@ This document outlines the core technologies and services that will be utilized 
 
 ## 7. Deployment & Infrastructure {#tsam-deployment-infra}
 
-*   **7.1. Cloud Provider:** Google Cloud Platform (GCP) {#tsam-cloud-provider}
-    *   **Purpose:** The overarching cloud infrastructure for hosting, deploying, and managing all `Agent-Makalah` services, leveraging its native integration with Google ADK and Gemini API.
+*   **7.1. Cloud Provider:** Render.com (PaaS) {#tsam-cloud-provider}
+    *   **Purpose:** The primary Platform-as-a-Service for hosting, deploying, and managing all `Agent-Makalah` services, leveraging its ease of use, Git-based deployment, and managed services for databases and caching.
 *   **7.2. Containerization:** Docker {#tsam-containerization}
-    *   **Purpose:** To package `Agent-Makalah`'s FastAPI backend and ADK agent components into consistent, isolated environments for simplified deployment and scalability.
-*   **7.3. Compute Services (for Backend & Agents):** Google Cloud Run {#tsam-compute-services}
-    *   **Purpose:** For serverless deployment of the FastAPI backend and individual ADK agents. Cloud Run is ideal for MVP due to its auto-scaling to zero (cost-effectiveness for fluctuating traffic), rapid deployment, and managed nature, capable of supporting the initial target of 1,000 users effectively.
-*   **7.4. Monitoring & Logging:** Google Cloud Monitoring, Google Cloud Logging {#tsam-monitoring-logging}
-    *   **Purpose:** For collecting application logs, metrics, and traces from all services, enabling effective monitoring, debugging, and operational insights.
-*   **7.5. Continuous Integration/Continuous Deployment (CI/CD):** GitHub Actions / Google Cloud Build {#tsam-ci-cd}
-    *   **Purpose:** To automate the software delivery pipeline, including code builds, testing, and deployments to GCP.
+    *   **Purpose:** To package `Agent-Makalah`'s FastAPI backend and ADK agent components into consistent, isolated environments for simplified deployment and scalability on Render.com.
+*   **7.3. Compute Services (for Backend & Agents):** Render Services (e.g., Web Service for FastAPI, Background Workers for ADK Agents) {#tsam-compute-services}
+    *   **Purpose:** For deploying the FastAPI backend and individual ADK agents as scalable services on Render.com. Render Services offer auto-scaling (based on configuration), custom domains, and managed environments suitable for MVP and beyond.
+*   **7.4. Monitoring & Logging:** Render built-in Metrics & Logging, with optional integration to external APM/logging services (e.g., Datadog, Sentry) {#tsam-monitoring-logging}
+    *   **Purpose:** For collecting application logs, basic metrics, and traces from services running on Render.com. External services can be integrated for more advanced observability if needed.
+*   **7.5. Continuous Integration/Continuous Deployment (CI/CD):** GitHub Actions for building Docker images and pushing to a registry; Render.com for auto-deploying from the connected Git repository or Docker registry {#tsam-ci-cd}
+    *   **Purpose:** To automate the software delivery pipeline. GitHub Actions can handle build and test automation, while Render.com provides seamless auto-deployment from a linked GitHub repository or a specified Docker image.
 
 ---
 

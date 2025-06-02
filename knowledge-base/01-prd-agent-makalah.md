@@ -188,7 +188,7 @@ Beyond the core functionalities, `Agent-Makalah` must also meet several non-func
 *   **5.5. Maintainability:**
     *   The multi-agent architecture and modular design should facilitate easier updates, bug fixes, and feature expansions in future iterations.
 *   **5.6. Deployability:**
-    *   The system should be deployable in a cloud environment (e.g., Google Cloud Platform), leveraging containerization for ease of management.
+    *   The system should be deployable in a cloud environment (e.g., Render.com or similar Platform-as-a-Service providers), leveraging containerization (Docker) for ease of management and portability.
     
 ---
 

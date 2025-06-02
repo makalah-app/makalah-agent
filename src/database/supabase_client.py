@@ -5,7 +5,7 @@ Agent-Makalah Backend
 from supabase import create_client, Client
 from typing import Optional, List, Dict, Any
 import logging
-from core.config import settings
+from ..core.config import settings
 
 logger = logging.getLogger(__name__)
 

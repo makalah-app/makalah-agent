@@ -67,7 +67,7 @@ The design of `Agent-Makalah`'s backend architecture is guided by the following 
 *   **Reliability:** Ensuring system robustness through resilient component design, effective error handling, and robust data persistence mechanisms.
 *   **Security:** Implementing security best practices across all layers, from data storage to tool execution and external API integrations.
 *   **Maintainability:** Promoting clean code, clear documentation, and adherence to established development standards to facilitate long-term maintenance and evolution.
-*   **Cloud-Native:** Leveraging managed services and serverless paradigms offered by Google Cloud Platform (GCP) for efficiency, reduced operational overhead, and automatic scaling.
+*   **Cloud-Native:** Leveraging managed services and PaaS paradigms offered by Render.com for efficiency, reduced operational overhead, and automatic scaling.
 *   **ADK-Centric:** Optimizing the architecture to fully leverage the capabilities and patterns provided by the Google Agent Development Kit for multi-agent orchestration and management.
 
 **1.4. References**
@@ -149,7 +149,7 @@ This section elaborates on the design and responsibilities of each primary compo
 ### 3.2. Backend API Gateway & Core Application (FastAPI) {#baum-backend-api}
 
 *   **Description:** This component serves as the primary entry point for all external communications to `Agent-Makalah`'s backend. It's a lightweight, high-performance web application built with FastAPI.
-*   **Technology Stack:** FastAPI (Python), deployed as a containerized service (Docker) on Google Cloud Run.
+*   **Technology Stack:** FastAPI (Python), deployed as a containerized service (Docker) on a Render Web Service.
 *   **Responsibilities:**
     *   **API Gateway:**
         *   Receiving all incoming requests from the Client-Side Interface (user messages, file uploads, validation responses).
@@ -160,7 +160,7 @@ This section elaborates on the design and responsibilities of each primary compo
         *   Maintaining the link between the user's client session and the active ADK `Session`.
     *   **Request Pre-processing:**
         *   Performing initial parsing and validation of user inputs before forwarding to the ADK Agent Layer.
-        *   Handling file upload streams and securely storing them to Google Cloud Storage (GCS), then passing the GCS reference to the ADK Agent Layer.
+        *   Handling file upload streams and securely storing them to an object storage service (e.g., Cloudinary, AWS S3), then passing the storage reference to the ADK Agent Layer.
     *   **Response Handling:**
         *   Receiving responses and final outputs from the ADK Agent Layer (specifically the `Orchestrator_Agent`).
         *   Formatting responses for client consumption (e.g., converting structured agent output to a displayable JSON format).
@@ -174,10 +174,10 @@ This section elaborates on the design and responsibilities of each primary compo
     *   `GET /session_status`: (Optional) To query the status of an ongoing session.
 *   **Interaction:**
     *   Receives requests from Client-Side Interface (HTTPS/WebSockets).
-    *   Communicates with the ADK Agent Layer (potentially via internal HTTP calls if ADK Agents are separate Cloud Run services, or direct function calls if co-located).
-    *   Interacts with Data Persistence Layer (PostgreSQL, GCS, Redis) for session state and data storage.
+    *   Communicates with the ADK Agent Layer (potentially via internal HTTP calls if ADK Agents are separate Render Services, or direct function calls if co-located).
+    *   Interacts with Data Persistence Layer (PostgreSQL, Object Storage, Redis) for session state and data storage.
     *   Sends responses back to Client-Side Interface.
-    *   **Scalability:** Leverages Cloud Run's auto-scaling capabilities to handle varying loads.
+    *   **Scalability:** Leverages Render Services' auto-scaling capabilities (based on configuration) to handle varying loads.
 
 ---
 
@@ -189,7 +189,7 @@ This section elaborates on the design and responsibilities of each primary compo
 ### 3.3. ADK Agent Layer {#baum-adk-layer}
 
 *   **Description:** This layer houses the entire multi-agent system of `Agent-Makalah`, built using the Google Agent Development Kit (ADK). It orchestrates the complex workflows, manages state, and interacts with external services (LLMs, web search) and data persistence.
-*   **Technology Stack:** Google ADK (Python), Python 3.9+, deployed as containerized services (Docker) on Google Cloud Run.
+*   **Technology Stack:** Google ADK (Python), Python 3.9+, deployed as containerized services (Docker) on Render Services (e.g., Web Services or Background Workers).
 *   **Responsibilities (Overall):**
     *   Executing `Agent-Makalah`'s core functional logic.
     *   Coordinating tasks among specialized sub-agents.
@@ -199,15 +199,15 @@ This section elaborates on the design and responsibilities of each primary compo
 
 **3.3.1. `Orchestrator_Agent` Deployment & Role** {#baum-adk-orchestrator-deployment}
     *   **Description:** The `Orchestrator_Agent` serves as the central control and communication hub for the entire `Agent-Makalah` system. It's the primary ADK Agent responsible for directing the workflow based on user intent and managing sub-agent interactions.
-    *   **Deployment Model:** Deployed as a dedicated Cloud Run service (or potentially as the main ADK application entry point if other sub-agents are called internally within the same ADK runtime instance).
+    *   **Deployment Model:** Deployed as a dedicated Render Service (e.g., Web Service or Background Worker, or potentially as the main ADK application entry point if other sub-agents are called internally within the same ADK runtime instance on a single Render Service).
     *   **Responsibilities:** As detailed in `spec-agent-makalah-multi-agent` (`Orchestrator_Agent` section) and `sop-tools-agent-makalah` (`SOP-AM-001`, `SOP-AM-002`, `SOP-AM-003`, `SOP-AM-004`, `SOP-AM-005` orchestration steps).
     *   **Interaction:** Receives requests from the Backend API Gateway. Calls and receives responses from other sub-agents. Interacts with the Data Persistence Layer.
 
 **3.3.2. Sub-Agents Deployment & Roles** {#baum-adk-sub-agents-deployment}
     *   **Description:** This includes the specialized `Brainstorming_Agent`, `Literature_Search_Agent`, `Outline_Draft_Agent`, `Writer_Agent`, and `Analysis_Editor_Agent`. Each is designed to perform a distinct, focused task within the overall workflow.
     *   **Deployment Model:**
-        *   **Option A (Separate Cloud Run Services):** Each sub-agent is deployed as its own distinct Cloud Run service. This provides maximum isolation and independent scalability.
-        *   **Option B (Co-located within `Orchestrator_Agent`'s Runtime):** Sub-agents' ADK `Agent` implementations are part of the `Orchestrator_Agent`'s Cloud Run service. `Orchestrator_Agent` invokes them as internal components/functions. This might simplify initial deployment but ties their scaling to the `Orchestrator_Agent`.
+        *   **Option A (Separate Render Services):** Each sub-agent is deployed as its own distinct Render Service (e.g., Background Worker). This provides maximum isolation and independent scalability.
+        *   **Option B (Co-located within `Orchestrator_Agent`'s Runtime):** Sub-agents' ADK `Agent` implementations are part of the `Orchestrator_Agent`'s Render Service. `Orchestrator_Agent` invokes them as internal components/functions. This might simplify initial deployment but ties their scaling to the `Orchestrator_Agent`.
         *   **Recommendation for MVP:** Option B is simpler for initial deployment and MVP, especially if inter-agent communication overhead is minimal. Option A can be a future enhancement for larger scale or strict microservices adherence.
     *   **Responsibilities:** As detailed in `spec-agent-makalah-multi-agent` for each respective sub-agent.
     *   **Interaction:** Primarily interacts with the `Orchestrator_Agent` (receiving commands, returning outputs) and external services/tools (LLMs, search APIs, file storage).
@@ -238,37 +238,33 @@ This section elaborates on the design and responsibilities of each primary compo
 ### 3.4. Data Persistence Layer {#baum-data-persistence}
 
 *   **Description:** This layer is responsible for the reliable, persistent storage and retrieval of all data required by the `Agent-Makalah` system. It supports conversation history, session state, intermediate artifacts, user-uploaded files, and operational metadata. It adheres to the data persistence strategy outlined in `memory-session-agent-makalah#msam-persistence-strategy`.
-*   **Technology Stack:** PostgreSQL (via Supabase), Redis (via Upstash), Google Cloud Storage (GCS).
+*   **Technology Stack:** PostgreSQL (via Supabase or Render PostgreSQL), Redis (via Upstash or Render Redis), an object storage service (e.g., Cloudinary, AWS S3, or Render Disks for smaller, non-CDN-critical files).
 
-**3.4.1. PostgreSQL Database (Supabase)** {#baum-postgresql-db}
+**3.4.1. PostgreSQL Database (Supabase / Render PostgreSQL)** {#baum-postgresql-db}
     *   **Purpose:** The primary relational database for structured, long-term persistent data.
-    *   **Managed Service:** Supabase is utilized as the managed PostgreSQL provider, simplifying database administration and scaling.
+    *   **Managed Service:** Supabase or Render's managed PostgreSQL service can be utilized, simplifying database administration and scaling.
     *   **Key Data Stored:**
         *   **Conversation History:** Full dialogue turns between users and `Orchestrator_Agent`, including timestamps, speaker, raw inputs, and outputs.
         *   **Session Metadata:** Unique Session IDs, session initiation/termination timestamps, associated user IDs.
         *   **Agent State (Persisted):** High-level `Orchestrator_Agent` state information, overall SOP progress, and status of major workflow steps (e.g., "Topic Finalized," "References Validated"). This is a durable copy of critical ADK `session.state` elements.
-        *   **Intermediate Artifact Metadata:** References to or metadata about stored intermediate artifacts (e.g., GCS path for a validated outline, ID for a record in a separate artifacts table).
-        *   **Uploaded File Metadata:** Details of user-uploaded files (filename, type, size, GCS path).
-    *   **Schema Design (Conceptual):** Will include tables for `conversations`, `sessions`, `workflow_progress`, `artifacts_metadata`, `uploaded_files`. Relationships will be defined to link these tables by Session ID and User ID.
-    *   **Interaction:** Accessed by the Backend API Gateway (FastAPI) for storing and retrieving session and conversation-related data.
+        *   **Intermediate Artifact Metadata:** References to or metadata about stored intermediate artifacts (e.g., object storage path for a validated outline, ID for a record in a separate artifacts table).
+        *   **User Account Information:** Securely hashed credentials, user profiles, API keys (if applicable).
+    *   **Data Schema:** As defined in `database-design-agent-makalah`.
 
-**3.4.2. Redis Cache (Upstash)** {#baum-redis-cache}
-    *   **Purpose:** Serves as a high-speed, in-memory data store for caching ephemeral or frequently accessed data to improve performance and responsiveness.
-    *   **Managed Service:** Upstash provides a serverless Redis instance, offering scalability and ease of management.
-    *   **Key Data Stored (Ephemeral/Cached):**
-        *   **Short-Term Session Data:** Rapidly changing session data that doesn't require immediate strong durability (e.g., current revision attempt counter for an active loop within a very short timeframe).
-        *   **Rate Limiting Counters:** For managing API call rates to external services.
-        *   **Cached LLM Responses:** Potentially, for common or reusable LLM responses that are not persona-sensitive, to reduce LLM API calls and latency (if permissible by policy).
-    *   **Interaction:** Accessed by the Backend API Gateway (FastAPI) and potentially directly by ADK Agents for caching operations.
+**3.4.2. Redis Cache (Upstash / Render Redis)** {#baum-redis-cache}
+    *   **Purpose:** For high-speed caching of frequently accessed, ephemeral data (e.g., short-term session data not managed by ADK's core state persistence, rate limiting counters, potentially cached LLM responses if permissible).
+    *   **Managed Service:** Upstash (Serverless Redis) or Render's managed Redis service can be used.
+    *   **Key Data Cached:**
+        *   Active ADK `Session` data (potentially, if ADK's default persistence to DB is too slow for certain hot paths).
+        *   Rate limiting counters.
+        *   Frequently accessed configuration data.
 
-**3.4.3. Object Storage (Google Cloud Storage)** {#baum-object-storage}
-    *   **Purpose:** For secure, scalable, and cost-effective storage of large binary objects, specifically user-uploaded academic paper files.
-    *   **Service:** Google Cloud Storage (GCS) provides highly durable and available object storage.
-    *   **Key Data Stored:**
-        *   **User-Uploaded Files:** The original files (PDF, DOCX, TXT) uploaded by users for analysis. These files are typically processed by the `Analysis_Editor_Agent` via `tool-makalah-browse-files`.
-        *   **Intermediate Large Artifacts (Optional):** Potentially, very large intermediate artifacts (e.g., a massive consolidated paper draft, detailed analysis reports) that might exceed ADK `session.state` size limits could be temporarily stored here, with their GCS reference stored in PostgreSQL.
-    *   **Lifecycle Management:** GCS lifecycle policies will be configured to manage retention (e.g., auto-delete after 24 hours for user-uploaded files, as per `memory-session-agent-makalah`'s data retention policies).
-    *   **Interaction:** Uploaded by the Backend API Gateway (FastAPI). Accessed by ADK Agents (via tools like `tool-makalah-browse-files`).
+**3.4.3. Object Storage (Cloudinary, AWS S3, or Render Disks)** {#baum-object-storage}
+    *   **Purpose:** For secure and scalable storage of user-uploaded academic paper files (PDF, DOCX, TXT) and potentially large intermediate artifacts generated by agents.
+    *   **Considerations:**
+        *   **External Service (Cloudinary/S3):** Offers robust features, CDN capabilities, and advanced access control. Suitable for larger files and public-facing links if needed.
+        *   **Render Disks:** Suitable for persistent storage directly attached to Render services. Good for files that don't require CDN access and can be managed within Render's ecosystem. Might be simpler for MVP if advanced object storage features are not immediately necessary. The choice depends on file size, access patterns, and CDN requirements.
+    *   **Metadata:** Metadata about stored objects (e.g., file type, size, user ID, GCS path if an external service is used) will be stored in the PostgreSQL database.
 
 ---
 
@@ -299,8 +295,8 @@ This section elaborates on the design and responsibilities of each primary compo
 **3.5.3. Custom Tool Services (Internal or External)** {#baum-custom-tools}
     *   **Description:** This category includes tools like `tool-makalah-kb-accessor`, `tool-makalah-browse-files`, and `tool-makalah-python-interpreter`. Their "external" nature here depends on their deployment model.
     *   **Deployment Models:**
-        *   **Co-located/Internal:** If implemented as Python functions directly within the ADK Agent's codebase and deployed as part of the same Cloud Run service. Communication is direct function call.
-        *   **Separate Microservice:** If a tool (e.g., a more complex `tool-makalah-python-interpreter` with a specialized execution environment, or a `tool-makalah-kb-accessor` that talks to a separate content store) is deployed as its own Cloud Run service. Communication would be via internal HTTP API calls.
+        *   **Co-located/Internal:** If implemented as Python functions directly within the ADK Agent's codebase and deployed as part of the same Render Service. Communication is direct function call.
+        *   **Separate Microservice:** If a tool (e.g., a more complex `tool-makalah-python-interpreter` with a specialized execution environment, or a `tool-makalah-kb-accessor` that talks to a separate content store) is deployed as its own Render Service. Communication would be via internal HTTP API calls.
     *   **Integration Point:** Accessed by various sub-agents via their respective custom ADK tool definitions.
     *   **Security:** Adherence to sandboxing for `tool-makalah-python-interpreter` and strict access controls for `tool-makalah-browse-files` is critical. Authentication/authorization may be required for calls to separate microservice tools.
     *   **Error Handling:** Tool-specific errors (e.g., sandbox violations, file access errors) are captured and reported back to the calling agent.
@@ -314,40 +310,71 @@ This section elaborates on the design and responsibilities of each primary compo
 
 ### 3.6. Logging & Monitoring Infrastructure {#baum-logging-monitoring}
 
-*   **Description:** A robust logging and monitoring infrastructure is essential for the observability, operational health, and debugging of the `Agent-Makalah` system. This infrastructure will primarily leverage Google Cloud's native services.
-*   **Technology Stack:** Google Cloud Logging, Google Cloud Monitoring.
+*   **Description:** This cross-cutting concern ensures that all `Agent-Makalah` components generate adequate logs and metrics for operational visibility, debugging, performance analysis, and security auditing.
+*   **Technology Stack:**
+    *   **Logging:** Render's built-in log streaming. For more advanced needs, integration with a third-party centralized logging platform (e.g., Sentry, Logtail, Datadog). Python's standard `logging` module will be used within the application code.
+    *   **Monitoring:** Render's built-in service metrics (CPU, memory, network, request count, latency). For more detailed application performance monitoring (APM), integration with a third-party APM tool (e.g., Sentry, Datadog, New Relic).
+*   **Responsibilities:**
+    *   **Structured Logging:** All application components (FastAPI backend, ADK Agents) will produce structured logs (e.g., JSON format) containing relevant context (timestamp, service name, request ID, user ID, severity, message).
+    *   **Metrics Collection:**
+        *   **System Metrics:** Render automatically provides metrics for its services.
+        *   **Application Metrics:** Custom metrics (e.g., number of active ADK sessions, tool invocation counts, LLM API call latencies) can be exposed via Prometheus-compatible endpoints if using external monitoring, or logged for later analysis.
+    *   **Alerting:** Configure alerts based on critical log patterns (e.g., high error rates) or metric thresholds (e.g., high CPU usage, excessive latency) using Render's capabilities or an integrated third-party service.
+    *   **Log Aggregation & Analysis:** Logs from all services will be streamed to Render's logging system or a centralized platform for easy searching, filtering, and analysis.
+*   **Key Logged Information:**
+    *   Incoming API requests and responses (FastAPI).
+    *   ADK Agent invocations, inputs, and outputs.
+    *   Tool calls, parameters, and results.
+    *   LLM API requests (excluding sensitive data like API keys in logs) and responses (or summaries).
+    *   Errors and exceptions with stack traces.
+    *   Security-relevant events (e.g., authentication attempts, authorization failures).
+*   **Integration with ADK Logging:** ADK's internal logging mechanisms will be configured to align with the overall logging strategy, ensuring that ADK agent logs are also captured and structured appropriately.
 
-**3.6.1. Logging (`Google Cloud Logging`)**
-    *   **Purpose:** To collect, store, and manage all logs generated by `Agent-Makalah`'s components.
-    *   **Mechanism:**
-        *   Each `Agent-Makalah` component (FastAPI backend, `Orchestrator_Agent`, sub-agents, custom tool services) will be configured to output structured logs (e.g., JSON format) to standard output (stdout/stderr).
-        *   Google Cloud Run automatically streams stdout/stderr to Google Cloud Logging.
-        *   Logs will include timestamps, severity levels (INFO, WARNING, ERROR), component identifiers, session IDs, and relevant message payloads.
-    *   **Key Logged Events:**
-        *   All user inputs and `Orchestrator_Agent` outputs (for traceability).
-        *   Inter-agent communication events (task delegation, output reception).
-        *   Tool invocations, parameters, and results (success/failure).
-        *   Error events (P-levels, V-Codes, stack traces if available).
-        *   System and application-level events (e.g., service start/stop, configuration changes).
-    *   **Log Retention:** Log retention policies will be configured in Cloud Logging (e.g., 30 days default, adjustable).
+**3.6.1. Data Protection at Rest and in Transit**
 
-**3.6.2. Monitoring (`Google Cloud Monitoring`)**
-    *   **Purpose:** To collect, analyze, and visualize operational metrics and health status of `Agent-Makalah`'s components.
-    *   **Mechanism:**
-        *   Cloud Run automatically provides basic metrics (e.g., request count, latency, CPU/memory utilization, error rates) to Google Cloud Monitoring.
-        *   Custom metrics can be emitted by the application code (e.g., number of successful paper creations, average revision loops per paper, specific sub-agent task completion rates).
-    *   **Key Monitored Metrics:**
-        *   Service Availability (Uptime) for Backend API and ADK Agents.
-        *   Request Latency for user interactions and inter-agent calls.
-        *   Error Rates (HTTP errors, internal application errors, tool failures).
-        *   Resource Utilization (CPU, Memory) per service.
-        *   LLM API call rates and latency.
-        *   Active user sessions.
-    *   **Alerting:** Alerting policies will be configured in Cloud Monitoring to notify operations teams of critical issues (e.g., high error rates, service downtime, resource exhaustion).
+*   **Data Encryption at Rest:**
+    *   **Requirement:** All sensitive data persisted in the Data Persistence Layer (PostgreSQL database for conversation history, session state, artifact metadata; Google Cloud Storage for uploaded files) SHALL be encrypted at rest.
+    *   **Mechanism:** Leverage native encryption capabilities provided by managed cloud services (e.g., Render's managed PostgreSQL and Redis encryption, object storage service encryption).
+*   **Data Encryption in Transit:**
+    *   **Requirement:** All data transmitted between `Agent-Makalah`'s components (Client-Backend API, Backend API-ADK Agent Layer, ADK Agents-Data Persistence Layer, ADK Agents-External Services) SHALL be encrypted.
+    *   **Mechanism:** Enforce HTTPS/TLS for all external communication (Client to Backend API). Secure internal channels provided by Render.com for inter-service communication.
 
-**3.6.3. Tracing (Post-MVP Consideration)**
-    *   **Purpose:** To provide end-to-end visibility of a single user request as it flows through multiple components and agents, aiding in debugging complex distributed issues.
-    *   **Mechanism:** Future integration with distributed tracing solutions (e.g., Google Cloud Trace, OpenTelemetry) will be explored for post-MVP.
+**3.6.2. Authentication and Authorization**
+
+*   **API Gateway Authentication (Basic for MVP):**
+    *   **Requirement:** The Backend API Gateway (FastAPI) SHALL implement basic authentication for controlling access from the Client Interface (e.g., API keys, simple token validation) for MVP.
+    *   **Mechanism:** API keys or static tokens managed securely.
+*   **Internal Service Authorization:**
+    *   **Requirement:** Calls between Backend API Gateway and ADK Agent Layer, and between ADK Agents and Custom Tool Services (if deployed separately), SHALL be authorized.
+    *   **Mechanism:** Leverage Render's environment variable groups and access control mechanisms to manage inter-service communication credentials securely. For external services (LLMs, databases), use dedicated API keys/credentials stored as secrets.
+*   **Data Access Control:**
+    *   **Requirement:** Access to the PostgreSQL database, Redis, and object storage SHALL be restricted to authorized `Agent-Makalah` services only.
+    *   **Mechanism:** Utilize database user roles, strong passwords (managed by secrets manager), network firewalls, and object storage service access controls.
+
+**3.6.3. Tool Sandboxing & Access Control**
+
+*   **`tool-makalah-python-interpreter` Sandboxing:**
+    *   **Requirement:** The Python execution environment SHALL be strictly sandboxed, preventing unauthorized system calls, network access, and arbitrary file system operations.
+    *   **Mechanism:** Configure ADK's `CodeExecutionTool` or implement a custom isolated execution environment (e.g., Docker container with strict security policies, gVisor if using GKE for advanced sandboxing).
+*   **`tool-makalah-browse-files` Access Restrictions:**
+    *   **Requirement:** This tool SHALL only have read-only access to user-uploaded files within a highly restricted, temporary storage location (e.g., a specific GCS bucket directory for current session uploads).
+    *   **Mechanism:** Implement strict IAM policies on the GCS bucket for uploaded files, and enforce path validation at the tool's implementation layer.
+*   **`tool-makalah-web-search` Domain Filtering:**
+    *   **Requirement:** The `tool-makalah-web-search` SHALL enforce strict whitelisting of authorized academic domains/databases and implement filtering for potentially malicious URLs.
+    *   **Mechanism:** Implement a configurable list of allowed domains.
+*   **Secrets Management:**
+    *   **Requirement:** All sensitive credentials (e.g., LLM API keys, database passwords, external service API keys) SHALL be stored and accessed securely.
+    *   **Mechanism:** Utilize Google Secret Manager for centralized and encrypted storage of secrets. Applications will retrieve secrets at runtime via IAM-controlled access.
+
+**3.6.4. Secure Coding Practices & Input Validation**
+
+*   **Requirement:** All `Agent-Makalah` components SHALL adhere to secure coding practices (e.g., OWASP Top 10 mitigation).
+*   **Mechanism:** Implement comprehensive input validation and sanitization at all entry points (Backend API, internal ADK Agent inputs, tool inputs) to prevent injection attacks and other vulnerabilities. This aligns with `srs-agent-makalah#srs-nfr-security`.
+
+**3.6.5. Logging, Monitoring, and Auditing**
+
+*   **Requirement:** Comprehensive, immutable logs of all security-relevant events (e.g., authentication attempts, unauthorized access attempts, tool invocations, critical errors) SHALL be collected.
+*   **Mechanism:** Leverage Render's logging and monitoring capabilities for centralized log collection and alerting. Implement alerts in Render's monitoring system for suspicious activities or security policy violations. Regular log reviews will be conducted.
 
 ---
 
@@ -382,7 +409,7 @@ This flow describes the journey of a user's initial request into the system and 
     *   Sub-agent writes its output (e.g., topic options, reference list, drafted section, analysis report) back to ADK `session.state`.
     *   Sub-agent signals completion to `Orchestrator_Agent`.
 7.  **Data Persistence:** Throughout Step 5 & 6, `Orchestrator_Agent` and sub-agents read from/write to Data Persistence Layer (PostgreSQL for structured data, Redis for cache, GCS for files) via FastAPI or directly through ADK's storage integrations.
-8.  **Error Handling & Logging:** Errors detected at any layer (sub-agent, tool, FastAPI) are propagated to `Orchestrator_Agent`. `Orchestrator_Agent` logs the error and initiates fallback (potentially involving user interaction via FastAPI). All key interactions and errors are logged to Google Cloud Logging.
+8.  **Error Handling & Logging:** Errors detected at any layer (sub-agent, tool, FastAPI) are propagated to `Orchestrator_Agent`. `Orchestrator_Agent` logs the error and initiates fallback (potentially involving user interaction via FastAPI). All key interactions and errors are logged to Render's logging system.
 9.  **Response Generation (`Orchestrator_Agent`):** `Orchestrator_Agent` assembles the final response (e.g., complete paper, analysis report) or specific dialogue turn.
 10. **Response to Backend API:** `Orchestrator_Agent` returns the response to the Backend API Gateway.
 11. **Backend API to Client:** FastAPI formats the response and sends it back to the Client Interface.
@@ -435,10 +462,10 @@ Security is a paramount concern in the design and implementation of `Agent-Makal
 
 *   **Data Encryption at Rest:**
     *   **Requirement:** All sensitive data persisted in the Data Persistence Layer (PostgreSQL database for conversation history, session state, artifact metadata; Google Cloud Storage for uploaded files) SHALL be encrypted at rest.
-    *   **Mechanism:** Leverage native encryption capabilities provided by managed cloud services (e.g., GCP's default encryption for Cloud SQL/PostgreSQL and GCS, Supabase's encryption).
+    *   **Mechanism:** Leverage native encryption capabilities provided by managed cloud services (e.g., Render's managed PostgreSQL and Redis encryption, object storage service encryption).
 *   **Data Encryption in Transit:**
     *   **Requirement:** All data transmitted between `Agent-Makalah`'s components (Client-Backend API, Backend API-ADK Agent Layer, ADK Agents-Data Persistence Layer, ADK Agents-External Services) SHALL be encrypted.
-    *   **Mechanism:** Enforce TLS 1.2 or higher for all HTTP/S and WebSockets communication. Utilize secure internal channels provided by GCP for inter-service communication (e.g., private IP, VPC network for Cloud Run).
+    *   **Mechanism:** Enforce HTTPS/TLS for all external communication (Client to Backend API). Secure internal channels provided by Render.com for inter-service communication.
 
 **5.2. Authentication and Authorization**
 
@@ -447,10 +474,10 @@ Security is a paramount concern in the design and implementation of `Agent-Makal
     *   **Mechanism:** API keys or static tokens managed securely.
 *   **Internal Service Authorization:**
     *   **Requirement:** Calls between Backend API Gateway and ADK Agent Layer, and between ADK Agents and Custom Tool Services (if deployed separately), SHALL be authorized.
-    *   **Mechanism:** Leverage GCP's Identity and Access Management (IAM) for service accounts (e.g., Cloud Run service identities with specific IAM roles) to control inter-service communication.
+    *   **Mechanism:** Leverage Render's environment variable groups and access control mechanisms to manage inter-service communication credentials securely. For external services (LLMs, databases), use dedicated API keys/credentials stored as secrets.
 *   **Data Access Control:**
-    *   **Requirement:** Access to the PostgreSQL database, Redis, and GCS SHALL be restricted to authorized `Agent-Makalah` services only.
-    *   **Mechanism:** Utilize database user roles, strong passwords (managed by secrets manager), network firewalls, and GCS bucket IAM policies.
+    *   **Requirement:** Access to the PostgreSQL database, Redis, and object storage SHALL be restricted to authorized `Agent-Makalah` services only.
+    *   **Mechanism:** Utilize database user roles, strong passwords (managed by secrets manager), network firewalls, and object storage service access controls.
 
 **5.3. Tool Sandboxing & Access Control**
 
@@ -475,7 +502,7 @@ Security is a paramount concern in the design and implementation of `Agent-Makal
 **5.5. Logging, Monitoring, and Auditing**
 
 *   **Requirement:** Comprehensive, immutable logs of all security-relevant events (e.g., authentication attempts, unauthorized access attempts, tool invocations, critical errors) SHALL be collected.
-*   **Mechanism:** Leverage Google Cloud Logging for centralized log collection. Implement alerts in Google Cloud Monitoring for suspicious activities or security policy violations. Regular log reviews will be conducted.
+*   **Mechanism:** Leverage Render's logging and monitoring capabilities for centralized log collection and alerting. Implement alerts in Render's monitoring system for suspicious activities or security policy violations. Regular log reviews will be conducted.
 
 ---
 
@@ -486,19 +513,18 @@ Security is a paramount concern in the design and implementation of `Agent-Makal
 
 ## 6. Scalability & Reliability Considerations {#baum-scalability-reliability}
 
-The architecture of `Agent-Makalah` is designed to be inherently scalable and highly reliable, leveraging cloud-native patterns and managed services on Google Cloud Platform (GCP). This is critical for supporting the initial target of 1,000 users and ensuring a stable, performant experience.
+The architecture of `Agent-Makalah` is designed to be inherently scalable and highly reliable, leveraging cloud-native patterns and managed services on Render.com. This is critical for supporting the initial target of 1,000 users and ensuring a stable, performant experience.
 
 **6.1. Scalability Considerations**
 
 *   **Horizontal Scaling for Compute Services:**
-    *   **Mechanism:** Core compute components (Backend API Gateway/FastAPI, `Orchestrator_Agent`, and individual sub-agents if deployed as separate Cloud Run services) are deployed on Google Cloud Run. Cloud Run provides automatic horizontal scaling based on request load, scaling instances up or down (even to zero) as needed.
+    *   **Mechanism:** Core compute components (Backend API Gateway/FastAPI, `Orchestrator_Agent`, and individual sub-agents if deployed as separate Render Services) are deployed on Render Services. Render provides automatic horizontal scaling based on request load, scaling instances up or down (even to zero) as needed.
     *   **Benefit:** This ensures that the system can handle varying user loads efficiently without manual intervention, optimizing cost for fluctuating traffic.
 *   **Stateless or Near-Stateless Services:**
-    *   **Mechanism:** Backend API Gateway and individual ADK Agents (especially if deployed as separate Cloud Run services) are designed to be largely stateless or near-stateless. Critical session state is externalized to the Data Persistence Layer (PostgreSQL, Redis).
+    *   **Mechanism:** Backend API Gateway and individual ADK Agents (especially if deployed as separate Render Services) are designed to be largely stateless or near-stateless. Critical session state is externalized to the Data Persistence Layer (PostgreSQL, Redis).
     *   **Benefit:** Enables easy horizontal scaling of compute services as instances can be added or removed without concern for local state.
 *   **Database Scalability:**
-    *   **Mechanism:** PostgreSQL database is provided via Supabase, a managed service designed for scalability. Redis caching via Upstash also offers inherent scalability.
-    *   **Benefit:** These managed services handle database scaling, backups, and replication, reducing operational overhead and supporting increased data loads.
+    *   **Mechanism:** Utilizing managed PostgreSQL (Supabase or Render PostgreSQL) and Redis (Upstash or Render Redis) services allows for scaling these data stores according to the provider's capabilities, often with minimal manual intervention for read replicas or instance upgrades.
 *   **LLM Provider Scalability:**
     *   **Mechanism:** Reliance on highly scalable external LLM APIs (Google Gemini API, OpenAI API) which are designed for high throughput.
     *   **Benefit:** Ensures that the core AI capabilities can meet demand as user traffic grows.
@@ -506,107 +532,20 @@ The architecture of `Agent-Makalah` is designed to be inherently scalable and hi
 **6.2. Reliability Considerations**
 
 *   **Managed Services:**
-    *   **Mechanism:** Extensive use of GCP's managed services (Cloud Run, Cloud Storage, Cloud SQL, Cloud Monitoring, Cloud Logging) reduces operational complexity and leverages Google's built-in reliability, redundancy, and disaster recovery capabilities.
+    *   **Mechanism:** Extensive use of Render's managed services (Web Services, Background Workers, PostgreSQL, Redis) reduces operational complexity and leverages Render's built-in reliability, redundancy, and maintenance.
     *   **Benefit:** Higher availability and reduced mean time to recovery (MTTR) compared to self-managed infrastructure.
 *   **Redundancy and High Availability:**
-    *   **Mechanism:** Cloud Run services inherently offer high availability by distributing instances across multiple zones. PostgreSQL (Supabase) and GCS provide built-in data redundancy and replication.
+    *   **Mechanism:** Render Services inherently offer high availability by distributing instances. Managed databases and Redis services typically provide built-in data redundancy and replication.
     *   **Benefit:** Protects against single points of failure at the infrastructure level.
 *   **Robust Error Handling & Fallbacks:**
     *   **Mechanism:** The multi-agent architecture incorporates a comprehensive error handling strategy (`sop-tools-agent-makalah#sop-am-004-root`), ensuring graceful degradation, recovery attempts, and clear communication to the user during failures.
     *   **Benefit:** Improves user experience by preventing abrupt crashes and guiding users through issues.
 *   **Monitoring and Alerting:**
-    *   **Mechanism:** Integrated monitoring and logging (Google Cloud Monitoring, Google Cloud Logging) provide real-time visibility into system health, performance bottlenecks, and errors. Proactive alerts notify operations teams of critical issues.
+    *   **Mechanism:** Integrated monitoring and logging (Render's monitoring system) provide real-time visibility into system health, performance bottlenecks, and errors. Proactive alerts notify operations teams of critical issues.
     *   **Benefit:** Enables rapid detection and resolution of operational problems, minimizing downtime.
 *   **Idempotent Operations (Where Applicable):**
     *   **Mechanism:** Design critical API endpoints and internal agent operations to be idempotent where feasible. This ensures that repeated requests (e.g., due to network retries) do not result in unintended side effects.
     *   **Benefit:** Improves reliability in distributed systems.
-
----
-
-> Segment-ID: MCASG-LITREVIEW-STYLE
-> Source-File: makalah-academic-style-guides.txt
-> Parent-Anchor: {#makalah-academic-style-guides-root}
-
-## Literature Review Writing Style {#makalah-style-litreview-definition}
-
-This section serves as the final document defining the specific style guide for the literature review. Its purpose is to produce literature review text that is thematic, critical, and reinforces the research gap. Agents are required to adhere to these rules. This section links to the root document (`makalah-academic-style-guides#makalah-academic-style-guides-root`), the core academic style definition (`makalah-academic-style-guides#makalah-style-core-definition`), and the introduction style definition (`makalah-academic-style-guides#makalah-style-intro-definition`).
-
----
-
-> Segment-ID: MCASG-LITREVIEW-STYLE-STRUCTURE
-> Source-File: makalah-academic-style-guides.txt
-> Parent-Anchor: {#makalah-style-litreview-definition}
-
-### 1. Literature Review Structure: Thematic Focus {#litreview-structure-thematic}
-
-All rules from the Core Academic Writing Style (`makalah-academic-style-guides#makalah-style-core-definition::core-academic-style-rules`) apply to the Literature Review section unless explicitly overridden here.
-
-The literature review must be organized thematically, grouping sources based on related concepts, theories, or variables. A chronological structure is acceptable only if the historical development of the field is central to the argument. The organization must ensure a logical grouping of sources. The review should be structured logically, and subheadings should be used for major themes or variables if appropriate. Do not simply list summaries of papers one by one; instead, group and synthesize them. This segment adheres to compliant token usage and ensures resolvable anchor IDs. It links to the literature review structure (thematic focus) itself at `{#litreview-structure-thematic}`.
-
----
-
-> Segment-ID: MCASG-LITREVIEW-STYLE-CONTENT
-> Source-File: makalah-academic-style-guides.txt
-> Parent-Anchor: {#makalah-style-litreview-definition}
-
-### 2. Content Focus: Synthesis over Summary {#litreview-content-synthesis}
-
-The primary goal is synthesis, not just summarizing individual studies. The literature review should not be an annotated bibliography. The generated text must:
-*   Compare and contrast findings from different sources.
-*   Identify patterns and trends in the literature.
-*   Discuss relationships between studies.
-
-Avoid treating each source in isolation; show how they relate to one another. This segment adheres to compliant token usage and ensures resolvable anchor IDs. It links to the literature review structure (thematic focus) at `{#litreview-structure-thematic}`.
-
----
-
-> Segment-ID: MCASG-LITREVIEW-STYLE-CRITICAL
-> Source-File: makalah-academic-style-guides.txt
-> Parent-Anchor: {#makalah-style-litreview-definition}
-
-### 3. Critical Analysis {#litreview-critical-analysis}
-
-The review must include a critical analysis of the literature. Evaluate sources by commenting on:
-*   Methodological strengths and weaknesses.
-*   Key findings and their limitations.
-*   Theoretical consistency or contradictions.
-
-Do not simply accept findings at face value; engage critically with the material. This segment adheres to compliant token usage and ensures resolvable anchor IDs. It links to the content focus (synthesis over summary) at `{#litreview-content-synthesis}`.
-
----
-
-> Segment-ID: MCASG-LITREVIEW-STYLE-GAP
-> Source-File: makalah-academic-style-guides.txt
-> Parent-Anchor: {#makalah-style-litreview-definition}
-
-### 4. Research Gap Reinforcement {#litreview-gap-reinforcement}
-
-The literature review must clearly lead back to and reinforce the research gap identified in the introduction (`makalah-academic-style-guides#intro-research-gap-focus`). Show how the discussed literature highlights or confirms this gap. Conclude with a clear transition explaining how the current study addresses the identified gap, thereby leading into the methodology section. This segment adheres to compliant token usage and ensures resolvable anchor IDs. It links to the introduction's research gap focus and the literature review style definition at `{#litreview-style-definition}`.
-
----
-
-> Segment-ID: MCASG-LITREVIEW-STYLE-CITATION
-> Source-File: makalah-academic-style-guides.txt
-> Parent-Anchor: {#makalah-style-litreview-definition}
-
-### 5. Citation Policy {#litreview-citation-policy}
-
-All claims attributed to sources must be accurately and consistently cited in-text. Integrate citations smoothly into the text. The specific citation format will be handled by the bibliography formatting SOP (`makalah-task-sop#sop-makalah-bibliography-formatting`). Avoid over-reliance on single sources for any given point; synthesize from multiple sources where possible. This segment adheres to compliant token usage and ensures resolvable anchor IDs. It links to the literature review style definition at `{#litreview-style-definition}`.
-
----
-
-> Segment-ID: MCASG-LITREVIEW-STYLE-FORBIDDEN
-> Source-File: makalah-academic-style-guides.txt
-> Parent-Anchor: {#makalah-style-litreview-definition}
-
-### 6. Forbidden Elements in Literature Review {#litreview-forbidden-elements}
-
-In addition to the core forbidden elements, the following are specifically forbidden within the Literature Review section:
-*   Presenting your own research results (from the current study).
-*   Detailed methodology of the current study.
-*   Lengthy quotations (paraphrasing is preferred).
-
-For a general list of forbidden words and phrases, refer to the core academic style rules: `makalah-academic-style-guides#core-academic-style-rules::forbidden-elements-core`. This segment adheres to compliant token usage and ensures resolvable anchor IDs. It links to the literature review style definition at `{#litreview-style-definition}`.
 
 ---
 
@@ -617,35 +556,43 @@ For a general list of forbidden words and phrases, refer to the core academic st
 
 ## 7. Deployment Strategy (High-Level) {#baum-deployment-strategy}
 
-The deployment strategy for `Agent-Makalah` will leverage automated Continuous Integration/Continuous Deployment (CI/CD) practices and cloud-native services offered by Google Cloud Platform (GCP). This ensures efficient, reliable, and consistent delivery of the system to production environments.
+The deployment strategy for `Agent-Makalah` will leverage automated Continuous Integration/Continuous Deployment (CI/CD) practices and cloud-native services offered by Render.com. This ensures efficient, reliable, and consistent delivery of the system to production environments.
 
-**7.1. Code Repository and Version Control:**
-*   **Mechanism:** All source code, including FastAPI backend, ADK agent implementations, custom tools, and deployment configurations (e.g., Dockerfiles, Cloud Run YAMLs), will be stored in a centralized Git repository (e.g., GitHub).
-*   **Practice:** Version control will strictly adhere to branching strategies (e.g., Git Flow or Trunk-Based Development) and pull request (PR) reviews to maintain code quality and collaboration.
+**7.1. Version Control:**
+*   **Repository:** All source code (FastAPI backend, ADK agents), Dockerfiles, infrastructure-as-code definitions (if any, e.g., Render Blueprint YAML), and deployment configurations will be stored in a centralized Git repository (e.g., GitHub).
 
 **7.2. Continuous Integration (CI):**
-*   **Mechanism:** A CI pipeline (e.g., GitHub Actions, Google Cloud Build) will be triggered automatically upon every code commit to the main branches (e.g., `main`, `develop`).
-*   **Activities:** The CI pipeline will perform:
-    *   Automated code builds (e.g., Python dependency installation, Docker image creation).
-    *   Static code analysis (linters, security checks).
-    *   Automated unit and integration tests for all components.
-    *   Container image tagging and pushing to a container registry (e.g., Google Container Registry / Artifact Registry).
-*   **Benefit:** Ensures code quality, identifies integration issues early, and produces ready-to-deploy artifacts.
+*   **Trigger:** CI pipeline will be triggered on every push to main branches (e.g., `main`, `develop`) or on pull requests.
+*   **Platform:** GitHub Actions is the primary CI platform.
+*   **Steps:**
+    *   **Code Checkout:** Fetch the latest code from the Git repository.
+    *   **Dependency Installation:** Install Python dependencies.
+    *   **Linting & Static Analysis:** Run linters (e.g., Flake8, Pylint) and static analysis tools (e.g., MyPy) to ensure code quality.
+    *   **Unit & Integration Tests:** Execute automated tests to validate code correctness and component interactions.
+    *   **Docker Image Build:** Build Docker images for the FastAPI backend and ADK agent services.
+    *   **Push to Registry (Optional but Recommended):** Push the built Docker images to a container registry (e.g., Docker Hub, GitHub Container Registry). Render can also build from a Dockerfile directly from the Git repo.
 
 **7.3. Continuous Deployment (CD):**
-*   **Mechanism:** A CD pipeline will automatically or manually (for production releases) deploy the validated container images to GCP environments.
-*   **Activities:**
-    *   **Deployment to Staging/Testing:** Automated deployment to a staging environment for further testing (e.g., end-to-end tests, performance tests).
-    *   **Deployment to Production:** Manual trigger or automated deployment to the production environment after successful staging tests.
-    *   **Rollback Capability:** The deployment mechanism will support quick rollback to previous stable versions in case of critical issues post-deployment.
-*   **Services:** Deployment targets will primarily be Google Cloud Run services for the FastAPI backend and individual ADK agents.
+*   **Trigger:** CD pipeline can be triggered automatically after a successful CI build on specific branches (e.g., `main` for production) or manually for controlled releases.
+*   **Platform:** Render's native Git integration or Docker deployment capabilities.
+*   **Steps:**
+    *   **Deployment to Render:** Render will automatically pull the latest code (if deploying from Git) or the specified Docker image from the registry and deploy it to the configured Render Services (Web Services, Background Workers).
+    *   **Database Migrations (if applicable):** Any database schema changes should be handled through a managed migration process, potentially triggered as part of the deployment or as a separate step.
+    *   **Health Checks:** Render performs health checks to ensure the new deployment is operational before switching traffic.
+    *   **Zero-Downtime Deployments:** Render typically supports zero-downtime deployments for web services.
 
 **7.4. Environment Management:**
-*   **Mechanism:** Separate GCP projects or distinct configurations will be maintained for different environments (e.g., `development`, `staging`, `production`).
-*   **Benefit:** Ensures isolation and prevents accidental changes in production.
+*   **Mechanism:** Separate Render services or distinct configurations within Render will be maintained for different environments (e.g., `development`, `staging`, `production`).
+*   **Configuration:** Environment-specific configurations (API keys, database URLs, LLM endpoints) will be managed using Render's environment variable groups and secrets management.
 
-**7.5. Monitoring and Alerting Post-Deployment:**
-*   **Mechanism:** As detailed in Section 3.6, Google Cloud Monitoring and Cloud Logging will be fully utilized post-deployment for continuous operational visibility.
+**7.5. Rollback Strategy:**
+*   **Mechanism:** Render's deployment history allows for quick rollbacks to previous stable versions in case of deployment issues. Automated rollback based on health check failures can also be configured.
+
+**7.6. Infrastructure as Code (IaC) - Render Blueprints (Optional but Recommended):**
+*   **Mechanism:** Define Render services, databases, Redis instances, and their configurations using a `render.yaml` blueprint file stored in the Git repository. This allows for version-controlled, repeatable, and automated provisioning of the entire infrastructure on Render.
+
+**7.7. Monitoring and Alerting Post-Deployment:**
+*   **Mechanism:** As detailed in Section 3.6, Render's monitoring system will be fully utilized post-deployment for continuous operational visibility.
 *   **Practice:** Dashboards will be set up to visualize key metrics, and alerts will be configured for critical events (e.g., high error rates, downtime, resource spikes).
 *   **Benefit:** Enables proactive issue detection and rapid response.
 
@@ -681,7 +628,7 @@ The initial backend architecture for `Agent-Makalah` focuses on robustness and s
 
 **8.5. Enhanced Security & Compliance Features:**
 *   **Enhancement:** Implement more sophisticated security controls like fine-grained access control policies for specific data attributes, advanced threat detection, and automated compliance auditing.
-*   **Mechanism:** Integrate with specialized security services and tools (e.g., GCP Security Command Center).
+*   **Mechanism:** Integrate with specialized security services and tools (e.g., vulnerability scanners for Docker images, or services like Snyk if deeper security analysis is needed beyond Render's capabilities).
 
 **8.6. Hybrid Cloud/Multi-Cloud Strategy (If Needed):**
 *   **Enhancement:** Explore deploying specific workloads or data to other cloud providers or on-premises environments.

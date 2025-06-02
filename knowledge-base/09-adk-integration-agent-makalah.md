@@ -310,43 +310,20 @@ The `Orchestrator_Agent` is the central error coordinator.
 *   **Consistent V-Code Usage:** Consistent application and reporting of Makalah Framework V-Codes (`sop-tools-agent-makalah#sop-am-004-error-classification` will detail these) across all agents and tool implementations are vital for structured error management and debugging.
 *   **ADK Observability:** ADK's logging and tracing features will be utilized to capture error events, allowing developers to monitor and debug failures effectively.
 
----
+## 7. Deployment Considerations for ADK Agents {#aim-deployment-considerations}
 
-> Segment-ID: AIM-DEPLOYMENT-008
-> Source-File: adk-integration-agent-makalah
-> Parent-Anchor: aim-root
-> Context: Discusses high-level deployment considerations for Agent-Makalah using Google ADK, focusing on MVP requirements.
+While detailed deployment architecture is covered in `backend-architecture-agent-makalah`, specific considerations for deploying ADK-based agents for `Agent-Makalah` are outlined here. The primary deployment target for the ADK agents (both `Orchestrator_Agent` and sub-agents) will be Render Services (e.g., Web Services or Background Workers), leveraging containerization (Docker).
 
-## 8. Deployment Considerations (High-Level for MVP) {#aim-deployment-considerations}
+*   **Containerization:** Each ADK `Agent` (or a logical grouping like the `Orchestrator_Agent` with co-located sub-agents for MVP) will be packaged as a Docker container. This ensures a consistent runtime environment and simplifies deployment to Render Services.
+*   **Scalability:** Render Services offer automatic scaling capabilities. The stateless or near-stateless design of the agents, with state primarily managed in the ADK `Session` (backed by PostgreSQL/Redis), facilitates horizontal scaling of agent instances.
+*   **Configuration Management:** Agent-specific configurations (e.g., LLM API keys, tool endpoints, persona prompt configurations from `persona-prompt-agent-makalah`) will be managed securely using environment variables or a configuration service, accessible to the ADK agents at runtime within their Render Service environment.
+*   **Inter-Agent Communication in Deployed Environment:**
+    *   If sub-agents are deployed as separate Render Services from the `Orchestrator_Agent`, communication will likely occur over internal HTTP(S) calls, utilizing Render's private networking capabilities for security and low latency.
+    *   ADK provides mechanisms for registering and discovering other agents, which can be adapted for a distributed deployment on Render Services.
+*   **Logging and Monitoring:** ADK agents will integrate with the centralized logging and monitoring solution (as defined in `backend-architecture-agent-makalah`, i.e., Render's built-in capabilities and/or third-party services). Standardized log formats will be used for ADK agent events.
+*   **Resource Allocation:** The resource requirements (CPU, memory) for each Render Service hosting an ADK agent will be determined based on testing and anticipated load, and configured accordingly in Render.
 
-The Google Agent Development Kit (ADK) offers inherent flexibility in deployment, allowing `Agent-Makalah` to be run in various environments. This section outlines high-level considerations for deploying the `Agent-Makalah` system, with a focus on supporting the Minimum Viable Product (MVP) development and eventual production needs.
-
-**8.1. Deployment Model:**
-
-*   **Local Development & Testing:** During the development and testing phases, `Agent-Makalah` and its sub-agents can be run locally on developer workstations. ADK's local runtime and debugging UI are essential for this purpose. This allows for rapid iteration and troubleshooting of individual agents and their interactions.
-*   **Cloud-Based Deployment (for Production/Staging):** For production environments and potentially for staging/testing environments, `Agent-Makalah` should be deployed to a scalable and robust cloud platform. Given ADK's Google origin, Google Cloud Platform (GCP) is the recommended target.
-    *   **Containerization:** Agents (implemented as Python applications) can be containerized using Docker. This ensures consistency across different environments and simplifies deployment.
-    *   **Managed Services:** GCP services such as Cloud Run (for serverless container deployment), Cloud Functions (for simpler, event-driven agent invocations if applicable), or Google Kubernetes Engine (GKE) for more complex, orchestrated deployments, can be leveraged to host the ADK agents. The choice will depend on expected traffic, scalability needs, and operational complexity.
-    *   **Persistent Storage:** Databases (e.g., Cloud SQL for PostgreSQL, Cloud Datastore/Firestore for NoSQL needs) will be used for persisting chat history, agent states, and intermediate artifacts as per `memory-session-agent-makalah` and `database-design-agent-makalah`. Cloud Storage can be used for temporary storage of user-uploaded files.
-
-**8.2. Scalability and Resource Management:**
-
-*   **Agent Scaling:** ADK's design and cloud-native deployment options allow for individual sub-agents (as independent microservices or functions) to be scaled independently based on demand. For instance, the `Writer_Agent` might require more resources or concurrent instances than the `Brainstorming_Agent` during peak usage.
-*   **Resource Limits:** Proper resource allocation (CPU, memory) and auto-scaling configurations should be implemented in the deployment environment to optimize cost and performance.
-
-**8.3. Networking and Access Control:**
-
-*   **Secure Endpoints:** The primary interface for `Agent-Makalah` (typically through the `Orchestrator_Agent`'s endpoint) must be secured with appropriate authentication and authorization mechanisms (e.g., API keys, OAuth 2.0).
-*   **Internal Communication:** Inter-agent communication within the cloud environment should leverage secure internal networking (e.g., VPC networks) provided by the cloud platform, minimizing exposure to the public internet.
-*   **Firewall Rules:** Strict firewall rules should be configured to allow only necessary inbound and outbound traffic for agent services.
-
-**8.4. Monitoring and Logging:**
-
-*   Cloud-native monitoring and logging solutions (e.g., Google Cloud Logging, Cloud Monitoring) should be integrated to collect agent logs, performance metrics, and error traces. This is crucial for operational visibility, troubleshooting, and adherence to `sop-tools-agent-makalah#sop-am-004-root`'s error reporting and logging requirements.
-
-**8.5. Continuous Integration/Continuous Deployment (CI/CD):**
-
-*   A CI/CD pipeline should be established to automate the building, testing, and deployment of agent code. This ensures consistent and reliable releases.
+Adherence to these considerations will ensure that `Agent-Makalah`'s ADK components are deployed in a scalable, reliable, and maintainable manner on Render.com.
 
 ---
 
