@@ -17,8 +17,8 @@ import os
 from datetime import datetime
 
 # Import API routes
-from api.routes import api_router
-from api.auth_routes import auth_router
+from src.api.routes import api_router
+from src.api.auth_routes import auth_router
 
 # Import security middleware
 from src.middleware.security_headers import SecurityHeadersMiddleware
