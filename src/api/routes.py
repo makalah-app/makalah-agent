@@ -6,7 +6,7 @@ Main API router configuration for all endpoints with Supabase integration
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Dict, Any, List
 from pydantic import BaseModel
-from database.supabase_client import supabase_client
+from src.database.supabase_client import supabase_client
 
 # Create main API router
 api_router = APIRouter(prefix="/api/v1")
