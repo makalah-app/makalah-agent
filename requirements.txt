@@ -63,8 +63,8 @@ isort==5.13.2
 # Environment
 python-dotenv==1.0.0
 
-# Search Integration
-serper==0.1.4
+# Search Integration  
+serpapi==0.1.5
 
 # Session Management
 itsdangerous==2.1.2
