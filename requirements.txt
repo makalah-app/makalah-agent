@@ -45,7 +45,6 @@ numpy==1.25.2
 # Background Tasks & Caching
 celery==5.3.4
 redis==5.0.8
-python-redis==4.6.0
 upstash-redis==1.4.0
 
 # Monitoring & Logging
@@ -79,8 +78,7 @@ email-validator==2.1.0
 # Serialization
 orjson==3.9.10
 
-# CORS
-python-cors==1.7.0
+# CORS (Note: FastAPI has built-in CORS, this line removed if causing issues)
 
 # Rate Limiting
 slowapi==0.1.9
